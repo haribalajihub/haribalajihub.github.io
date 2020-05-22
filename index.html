@@ -11,19 +11,26 @@
       height: 100vh;
       margin: 0;
       align-items: center;
-      justify-content: center;
-      padding: 0 50px;
+      
+      padding: 0 10px;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    video {
+    .v1 {
       background: white;
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: contain;
-      max-width: calc(50% - 5%);
-      margin: 0 5%;
-      box-sizing: border-box;
-      border-radius: 2px;
+      margin: 0 25%;
+      width: 400px;
+		height: 299px;
+	  border: 1px solid blue;
+      border-radius: 0px;
+      padding: 0;
+    }
+    .v2 {
+      background: blue;
+      margin: 0 -25%;
+      width: 400px;
+		height: 299px;
+	  border: 1px solid blue;
+      border-radius: 0px;
       padding: 0;
     }
     .copy {
@@ -37,8 +44,9 @@
   </style>
 </head>
 <body>
-  <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video>
+  <!--<div class="copy">Send your Room ID to a friend to start a video call</div>-->
+  <video class="v1" id="localVideo" autoplay muted></video>
+  <video class="v2" id="remoteVideo" autoplay></video>
   <script>
   if (!location.hash) {
   location.hash = Math.floor(Math.random() * 0xFFFFFF).toString(16);
