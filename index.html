@@ -1,163 +1,43 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <script type='text/javascript' src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <style>
-    body {
-      background: #ff75f6;
-      display: flex;
-      height: 100vh;
-      margin: 0;
-      align-items: center;
-      
-      padding: 0 10px;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    .v1 {
-	    position:fixed
-      background: #ff75f6;
-      margin: -2%;
-      width: 155px;
-		height: 215px;
-    }
-    .v2 {
-	    position:fixed
-      background: #ff75f6;
-    margin: 4%;
-      width: 155px;
-	height: 215px;
-    }
-    .copy {
-      position: fixed;
-      top: 25px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 18px;
-      color: white;
-    }
-  </style>
-</head>
-<body>
-  <!--<div class="copy">Send your Room ID to a friend to start a video call</div>-->
-  <video class="v1" id="localVideo" autoplay muted></video>
-  <video class="v2" id="remoteVideo" autoplay></video>
-  <script>
-  if (!location.hash) {
-  location.hash = Math.floor(Math.random() * 0xFFFFFF).toString(16);
+{
+	"datetime": "2021-07-01 02:04:46",
+	"geo": {
+		"city": "Dothan",
+		"country": "United States",
+		"continent": "North America",
+		"countryCode": "US",
+		"continentCode": "NA"
+	},
+	"cookies": {
+		"uid": "788d2f32-15f4-11ec-9265-f11a66b16bed"
+	},
+	"qs": {
+		"sid": "788d2f33-15f4-11ec-9265-f11a66b16bed",
+		"en": "pageview"
+	},
+	"ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+	"tt_ms": 1,
+	"protocol": "https",
+	"status": 200,
+	"validRequest": true
+} {
+	"datetime": "2021-08-01 02:04:47",
+	"geo": {
+		"city": "Santa Rosa",
+		"country": "United States",
+		"continent": "North America",
+		"countryCode": "US",
+		"continentCode": "NA"
+	},
+	"cookies": {
+		"uid": "788d2f34-15f4-11ec-9265-f11a66b16bed"
+	},
+	"qs": {
+		"sid": "788d2f35-15f4-11ec-9265-f11a66b16bed",
+		"en": "pageview"
+	},
+	"ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
+	"tt_ms": 1,
+	"protocol": "https",
+	"status": 200,
+	"validRequest": true
 }
-const roomHash = location.hash.substring(1);
-
-// TODO: Replace with your own channel ID
-const drone = new ScaleDrone('BSwaAfHMGRGHmkvw');
-// Room name needs to be prefixed with 'observable-'
-const roomName = 'observable-' + roomHash;
-const configuration = {
-  iceServers: [{
-    urls: 'stun:stun.l.google.com:19302'
-  }]
-};
-let room;
-let pc;
-
-
-function onSuccess() {};
-function onError(error) {
-  console.error(error);
-};
-
-drone.on('open', error => {
-  if (error) {
-    return console.error(error);
-  }
-  room = drone.subscribe(roomName);
-  room.on('open', error => {
-    if (error) {
-      onError(error);
-    }
-  });
-  // We're connected to the room and received an array of 'members'
-  // connected to the room (including us). Signaling server is ready.
-  room.on('members', members => {
-    console.log('MEMBERS', members);
-    // If we are the second user to connect to the room we will be creating the offer
-    const isOfferer = members.length === 2;
-    startWebRTC(isOfferer);
-  });
-});
-
-// Send signaling data via Scaledrone
-function sendMessage(message) {
-  drone.publish({
-    room: roomName,
-    message
-  });
-}
-
-function startWebRTC(isOfferer) {
-  pc = new RTCPeerConnection(configuration);
-
-  // 'onicecandidate' notifies us whenever an ICE agent needs to deliver a
-  // message to the other peer through the signaling server
-  pc.onicecandidate = event => {
-    if (event.candidate) {
-      sendMessage({'candidate': event.candidate});
-    }
-  };
-
-  // If user is offerer let the 'negotiationneeded' event create the offer
-  if (isOfferer) {
-    pc.onnegotiationneeded = () => {
-      pc.createOffer().then(localDescCreated).catch(onError);
-    }
-  }
-
-  // When a remote stream arrives display it in the #remoteVideo element
-  pc.onaddstream = event => {
-    remoteVideo.srcObject = event.stream;
-  };
-
-  navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: true,
-  }).then(stream => {
-    // Display your local video in #localVideo element
-    localVideo.srcObject = stream;
-    // Add your stream to be sent to the conneting peer
-    pc.addStream(stream);
-  }, onError);
-
-  // Listen to signaling data from Scaledrone
-  room.on('data', (message, client) => {
-    // Message was sent by us
-    if (client.id === drone.clientId) {
-      return;
-    }
-
-    if (message.sdp) {
-      // This is called after receiving an offer or answer from another peer
-      pc.setRemoteDescription(new RTCSessionDescription(message.sdp), () => {
-        // When receiving an offer lets answer it
-        if (pc.remoteDescription.type === 'offer') {
-          pc.createAnswer().then(localDescCreated).catch(onError);
-        }
-      }, onError);
-    } else if (message.candidate) {
-      // Add the new ICE candidate to our connections remote description
-      pc.addIceCandidate(
-        new RTCIceCandidate(message.candidate), onSuccess, onError
-      );
-    }
-  });
-}
-
-function localDescCreated(desc) {
-  pc.setLocalDescription(
-    desc,
-    () => sendMessage({'sdp': pc.localDescription}),
-    onError
-  );
-}</script>
-</body>
-</html>
